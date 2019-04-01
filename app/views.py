@@ -5,12 +5,29 @@ Werkzeug Documentation:  http://werkzeug.pocoo.org/documentation/
 This file creates your application.
 """
 
+import os
 from app import app
-from flask import render_template, request
+from flask import render_template, request, jsonify
+from werkzeug.utils import secure_filename
+from app.forms import UploadForm
 
 ###
 # Routing for your application.
 ###
+
+@app.route("/api/upload", methods=["POST"])
+def upload():
+    form = UploadForm()
+    if request.method == "POST":
+        if form.validate_on_submit() == True:
+            descrip = form.description.data
+            filename = assignPath(form.photo.data)
+            return jsonify(message="File upload successful",
+                filename=filename,
+                description=descrip)
+        else:
+            return jsonify(errors=form_errors(form))
+
 
 
 # Please create all new routes and view functions above this route.
@@ -23,7 +40,6 @@ def index(path):
     Because we use HTML5 history mode in vue-router we need to configure our
     web server to redirect all routes to index.html. Hence the additional route
     "/<path:path".
-
     Also we will render the initial webpage and then let VueJS take control.
     """
     return render_template('index.html')
@@ -44,6 +60,13 @@ def form_errors(form):
 
     return error_messages
 
+#Save the uploaded photo to a folder
+def assignPath(upload):
+    filename = secure_filename(upload.filename)
+    upload.save(os.path.join(
+                app.config['UPLOAD_FOLDER'], filename
+    ))
+    return filename
 
 ###
 # The functions below should be applicable to all Flask apps.
